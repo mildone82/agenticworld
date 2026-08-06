@@ -3,7 +3,7 @@ exec > /var/log/user-data.log 2>&1
 set -x
 
 # Base tooling (curl is preinstalled as curl-minimal on AL2023)
-yum install -y git jq unzip nodejs npm
+yum install -y git jq unzip nodejs npm aws-cli
 
 # Kiro CLI (ACP coding agent) — primary installer, npm fallback.
 # Run with HOME exported: the installer requires it in cloud-init's shell.
