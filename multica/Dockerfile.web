@@ -1,5 +1,9 @@
+# Public ECR avoids a hard dependency on Docker Hub for base image pulls.
+# Override this arg only with a reviewed, digest-pinned equivalent.
+ARG NODE_BASE_IMAGE=public.ecr.aws/docker/library/node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32
+
 # --- Dependencies ---
-FROM node:22-alpine AS deps
+FROM ${NODE_BASE_IMAGE} AS deps
 
 WORKDIR /app
 
@@ -20,7 +24,7 @@ RUN corepack enable && \
 RUN pnpm install --frozen-lockfile
 
 # --- Build ---
-FROM node:22-alpine AS builder
+FROM ${NODE_BASE_IMAGE} AS builder
 
 WORKDIR /app
 
@@ -50,7 +54,7 @@ ENV STANDALONE=true
 RUN pnpm --filter @multica/web build
 
 # --- Runtime ---
-FROM node:22-alpine AS runner
+FROM ${NODE_BASE_IMAGE} AS runner
 
 WORKDIR /app
 

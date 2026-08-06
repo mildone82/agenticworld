@@ -1,0 +1,37 @@
+images:
+  backend:
+    tag: "0.1.0"
+  frontend:
+    tag: "0.1.0"
+backend:
+  replicas: 1
+  strategy:
+    type: Recreate
+  config:
+    appEnv: development
+    appUrl: https://multica-dev.example.com
+    frontendOrigin: https://multica-dev.example.com
+    cookieDomain: multica-dev.example.com
+    redisUrl: ""
+    s3Bucket: ""
+    metricsAddr: 0.0.0.0:9090
+  pdb:
+    enabled: false
+frontend:
+  replicas: 1
+  pdb:
+    enabled: false
+ingress:
+  host: multica-dev.example.com
+networkPolicy:
+  ingressCidrs:
+    - 10.0.0.0/8
+  databaseCidrs:
+    - 10.0.0.0/8
+  redisCidrs:
+    - 10.0.0.0/8
+monitoring:
+  serviceMonitor:
+    enabled: false
+  prometheusRule:
+    enabled: false

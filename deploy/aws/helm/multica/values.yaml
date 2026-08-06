@@ -1,0 +1,175 @@
+images:
+  backend:
+    repository: ghcr.io/multica-ai/multica-backend
+    tag: "0.1.0"
+    digest: ""
+    pullPolicy: IfNotPresent
+  frontend:
+    repository: ghcr.io/multica-ai/multica-web
+    tag: "0.1.0"
+    digest: ""
+    pullPolicy: IfNotPresent
+
+existingSecret: multica-secrets
+
+serviceAccount:
+  create: true
+  name: multica
+  annotations: {}
+  automountServiceAccountToken: false
+
+backend:
+  replicas: 1
+  strategy:
+    type: Recreate
+  config:
+    appEnv: production
+    appUrl: https://multica.example.com
+    frontendOrigin: https://multica.example.com
+    corsAllowedOrigins: ""
+    cookieDomain: multica.example.com
+    allowSignup: false
+    disableWorkspaceCreation: true
+    googleClientId: ""
+    googleRedirectUri: https://multica.example.com/auth/callback
+    s3Bucket: ""
+    s3Region: us-east-1
+    cloudfrontDomain: ""
+    cloudfrontKeyPairId: ""
+    localUploadBaseUrl: ""
+    redisUrl: ""
+    realtimeRelayMode: sharded
+    databaseMaxConns: 20
+    databaseMinConns: 5
+    metricsAddr: 0.0.0.0:9090
+  migration:
+    enabled: true
+    backoffLimit: 2
+    activeDeadlineSeconds: 900
+    ttlSecondsAfterFinished: 86400
+  terminationGracePeriodSeconds: 60
+  podAnnotations: {}
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 10001
+    runAsGroup: 10001
+    fsGroup: 10001
+    seccompProfile:
+      type: RuntimeDefault
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop: ["ALL"]
+  probes:
+    startup:
+      failureThreshold: 30
+      periodSeconds: 10
+    readiness:
+      periodSeconds: 10
+      timeoutSeconds: 3
+    liveness:
+      periodSeconds: 30
+      timeoutSeconds: 3
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+  topologySpreadConstraints: []
+  affinity: {}
+  tolerations: []
+  pdb:
+    enabled: false
+    minAvailable: 1
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 4
+    targetCPUUtilizationPercentage: 70
+
+frontend:
+  replicas: 2
+  config:
+    remoteApiUrl: ""
+    publicApiUrl: ""
+    publicWsUrl: ""
+  terminationGracePeriodSeconds: 30
+  podAnnotations: {}
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1001
+    runAsGroup: 1001
+    fsGroup: 1001
+    seccompProfile:
+      type: RuntimeDefault
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop: ["ALL"]
+  probes:
+    startup:
+      failureThreshold: 30
+      periodSeconds: 5
+    readiness:
+      periodSeconds: 10
+      timeoutSeconds: 3
+    liveness:
+      periodSeconds: 30
+      timeoutSeconds: 3
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  topologySpreadConstraints: []
+  affinity: {}
+  tolerations: []
+  pdb:
+    enabled: true
+    minAvailable: 1
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPUUtilizationPercentage: 70
+
+ingress:
+  enabled: true
+  className: alb
+  host: multica.example.com
+  annotations:
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: "443"
+    alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds=120
+  tls: []
+
+networkPolicy:
+  enabled: true
+  ingressCidrs: []
+  databaseCidrs: []
+  redisCidrs: []
+  backendExternalEgressCidrs:
+    - 0.0.0.0/0
+
+monitoring:
+  namespaceLabels:
+    kubernetes.io/metadata.name: monitoring
+  podLabels:
+    app.kubernetes.io/name: prometheus
+  serviceMonitor:
+    enabled: false
+    additionalLabels: {}
+    interval: 30s
+  prometheusRule:
+    enabled: false
+    additionalLabels: {}
+
+revisionHistoryLimit: 5

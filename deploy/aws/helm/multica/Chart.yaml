@@ -1,0 +1,11 @@
+apiVersion: v2
+name: multica-aws
+version: 0.1.0
+appVersion: "0.1.0"
+description: Production-oriented AWS EKS deployment for Multica frontend and backend
+type: application
+home: https://multica.ai
+sources:
+  - https://github.com/multica-ai/multica
+annotations:
+  artifacthub.io/containsSecurityUpdates: "false"
