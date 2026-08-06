@@ -45,7 +45,9 @@ frontend:
 ingress:
   host: multica.example.com
   annotations:
-    alb.ingress.kubernetes.io/certificate-arn: replace-with-acm-certificate-arn
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}]'
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
 networkPolicy:
   ingressCidrs:
     - 10.40.0.0/16

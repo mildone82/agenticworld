@@ -4,6 +4,8 @@ resource "aws_secretsmanager_secret" "application" {
   recovery_window_in_days = 30
 }
 
+data "aws_partition" "current" {}
+
 resource "aws_iam_role" "application" {
   name = "${local.resource_name}-application"
   assume_role_policy = jsonencode({
@@ -84,8 +86,7 @@ resource "aws_eks_pod_identity_association" "external_secrets" {
 }
 
 module "load_balancer_controller_role" {
-  source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
-  version = "5.59.0"
+  source = "./vendor/iam//modules/iam-role-for-service-accounts-eks"
 
   role_name                              = "${local.resource_name}-aws-load-balancer-controller"
   attach_load_balancer_controller_policy = true
@@ -179,8 +180,8 @@ resource "aws_iam_role_policy" "external_dns" {
       },
       {
         Effect   = "Allow"
-        Action   = ["route53:ChangeResourceRecordSets"]
-        Resource = "arn:aws:route53:::hostedzone/${var.route53_zone_id}"
+        Action   = ["route53:ChangeResourceRecordSets", "route53:ListResourceRecordSets"]
+        Resource = "arn:${data.aws_partition.current.partition}:route53:::hostedzone/${var.route53_zone_id}"
       }
     ]
   })

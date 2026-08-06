@@ -29,6 +29,7 @@ backend:
     corsAllowedOrigins: ""
     cookieDomain: multica.example.com
     allowSignup: false
+    allowedEmails: ""
     disableWorkspaceCreation: true
     googleClientId: ""
     googleRedirectUri: https://multica.example.com/auth/callback
@@ -146,8 +147,7 @@ ingress:
   annotations:
     alb.ingress.kubernetes.io/target-type: ip
     alb.ingress.kubernetes.io/scheme: internet-facing
-    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
-    alb.ingress.kubernetes.io/ssl-redirect: "443"
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}]'
     alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds=120
   tls: []
 

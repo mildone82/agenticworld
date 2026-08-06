@@ -9,8 +9,7 @@ locals {
 }
 
 module "vpc" {
-  source  = "terraform-aws-modules/vpc/aws"
-  version = "5.21.0"
+  source = "./vendor/vpc"
 
   name = local.resource_name
   cidr = var.vpc_cidr
@@ -35,8 +34,7 @@ module "vpc" {
 }
 
 module "eks" {
-  source  = "terraform-aws-modules/eks/aws"
-  version = "20.37.2"
+  source = "./vendor/eks"
 
   cluster_name    = local.resource_name
   cluster_version = var.cluster_version
@@ -68,6 +66,7 @@ module "eks" {
     application = {
       name           = "application"
       instance_types = var.node_instance_types
+      ami_type       = "AL2023_ARM_64_STANDARD"
       capacity_type  = "ON_DEMAND"
       min_size       = var.node_min_size
       desired_size   = var.node_desired_size
@@ -105,8 +104,7 @@ resource "aws_security_group" "database" {
 }
 
 module "database" {
-  source  = "terraform-aws-modules/rds/aws"
-  version = "6.12.0"
+  source = "./vendor/rds"
 
   identifier           = local.resource_name
   engine               = "postgres"
@@ -139,7 +137,8 @@ module "database" {
 
   performance_insights_enabled          = true
   performance_insights_retention_period = 7
-  create_monitoring_role                = true
+  create_monitoring_role                = false
+  monitoring_role_arn                   = "arn:aws-cn:iam::460592757249:role/rds-monitoring-role"
   monitoring_interval                   = 60
   enabled_cloudwatch_logs_exports       = ["postgresql", "upgrade"]
 

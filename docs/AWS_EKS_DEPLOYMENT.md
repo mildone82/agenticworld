@@ -277,3 +277,37 @@ For PostgreSQL outage, return bounded 503/backpressure and retry with bounded ex
 - Formal PAT workspace/runtime scoping and 90-day credential rotation must be verified against the deployed application version.
 - EKS remains conditionally accepted. If representative testing shows no Kubernetes-specific need or the team cannot support EKS upgrades/add-ons/on-call, compare the same images and external data services on ECS before production platform lock-in.
 - Third-party hosted use must satisfy the repository license and commercial-use obligations.
+
+## 13. External agent runtime (EC2 + Kiro CLI)
+
+Validated 2026-08-06: a dedicated EC2 host runs the `multica` daemon plus the
+Kiro CLI (`kiro-cli`, ACP coding agent) and registers a `kiro` runtime into a
+workspace through the ALB (`ws://`). The daemon stays outside EKS, per the
+architecture contract.
+
+### Resources
+
+- `deploy/aws/terraform/runtime-ec2.tf` — AL2023 arm64 (`t4g.medium`) in a
+  public ALB subnet, SSH-only ingress from the operator IP, key pair, and
+  user data that installs `kiro-cli` (`curl -fsSL https://cli.kiro.dev/install | bash`,
+  npm fallback `npm install -g @anthropic-ai/kiro-cli`).
+- `deploy/aws/scripts/setup-runtime-ec2.sh` — end-to-end provisioning:
+  terraform apply → wait for SSH → copy the server-matched `multica` binary →
+  `multica config set server_url/app_url <ALB DNS>` → `multica login --token <PAT>`
+  → `multica workspace switch <workspace-id>` → install and start the
+  `multica-daemon` systemd service.
+
+### Prerequisites and notes
+
+- The `multica` CLI binary must match the deployed server version (copy from
+  the workspace host, e.g. `0.4.17`, or build from the same commit).
+- Create a PAT for the owning user: `POST /api/tokens` (body `{"name": "..."}`)
+  with the user session; keep it in a secret manager, never in the repo.
+- The daemon auto-registers one runtime per detected CLI
+  (`kiro-cli` on PATH) per watched workspace and heartbeats over the ALB WS
+  route. Verify with `GET /api/runtimes?workspace_id=<id>` → `status: online`.
+- `kiro-cli` itself must be authenticated (Kiro account login) before tasks
+  can execute; registration and heartbeats do not require it.
+- The instance is created with `associate_public_ip_address = true`; the SSH
+  ingress CIDR (`runtime_ssh_cidrs`) should be tightened to a stable operator
+  IP or replaced with SSM Session Manager for production.
