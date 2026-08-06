@@ -1,0 +1,64 @@
+images:
+  backend:
+    repository: replace-with-backend-ecr-url
+    tag: "0.1.0"
+    # CI/CD must replace these placeholders with the same release's immutable digests.
+    digest: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+  frontend:
+    repository: replace-with-frontend-ecr-url
+    tag: "0.1.0"
+    digest: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+backend:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+  config:
+    appUrl: https://multica.example.com
+    frontendOrigin: https://multica.example.com
+    cookieDomain: multica.example.com
+    s3Bucket: replace-with-private-bucket
+    s3Region: us-east-1
+    redisUrl: rediss://replace-with-primary-endpoint:6379/0
+    databaseMaxConns: 20
+    databaseMinConns: 5
+  pdb:
+    enabled: true
+    minAvailable: 1
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: topology.kubernetes.io/zone
+      whenUnsatisfiable: DoNotSchedule
+      labelSelector:
+        matchLabels:
+          app.kubernetes.io/name: multica
+          app.kubernetes.io/component: backend
+frontend:
+  replicas: 2
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: topology.kubernetes.io/zone
+      whenUnsatisfiable: DoNotSchedule
+      labelSelector:
+        matchLabels:
+          app.kubernetes.io/name: multica
+          app.kubernetes.io/component: frontend
+ingress:
+  host: multica.example.com
+  annotations:
+    alb.ingress.kubernetes.io/certificate-arn: replace-with-acm-certificate-arn
+networkPolicy:
+  ingressCidrs:
+    - 10.40.0.0/16
+  databaseCidrs:
+    - 10.40.0.0/16
+  redisCidrs:
+    - 10.40.0.0/16
+monitoring:
+  serviceMonitor:
+    enabled: true
+    additionalLabels:
+      release: kube-prometheus-stack
+  prometheusRule:
+    enabled: true
+    additionalLabels:
+      release: kube-prometheus-stack

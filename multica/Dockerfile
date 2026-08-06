@@ -37,7 +37,13 @@ COPY --from=builder /src/server/bin/backfill_codex_usage_cache .
 COPY server/migrations/ ./migrations/
 COPY LICENSE NOTICE ./
 COPY docker/entrypoint.sh .
-RUN sed -i 's/\r$//' entrypoint.sh && chmod +x entrypoint.sh
+RUN sed -i 's/\r$//' entrypoint.sh && chmod +x entrypoint.sh && \
+    addgroup -S -g 10001 multica && \
+    adduser -S -D -H -u 10001 -G multica multica && \
+    mkdir -p /app/data/uploads && \
+    chown -R multica:multica /app
+
+USER 10001:10001
 
 EXPOSE 8080
 

@@ -1,0 +1,52 @@
+repositories:
+  - name: eks
+    url: https://aws.github.io/eks-charts
+  - name: external-secrets
+    url: https://charts.external-secrets.io
+  - name: metrics-server
+    url: https://kubernetes-sigs.github.io/metrics-server
+  - name: external-dns
+    url: https://kubernetes-sigs.github.io/external-dns/
+
+releases:
+  - name: aws-load-balancer-controller
+    namespace: kube-system
+    chart: eks/aws-load-balancer-controller
+    version: 1.13.3
+    values:
+      - clusterName: {{ requiredEnv "EKS_CLUSTER_NAME" }}
+        serviceAccount:
+          create: true
+          name: aws-load-balancer-controller
+          annotations:
+            eks.amazonaws.com/role-arn: {{ requiredEnv "AWS_LB_CONTROLLER_ROLE_ARN" }}
+  - name: external-secrets
+    namespace: external-secrets
+    createNamespace: true
+    chart: external-secrets/external-secrets
+    version: 0.18.2
+    values:
+      - serviceAccount:
+          name: external-secrets
+      - installCRDs: true
+  - name: metrics-server
+    namespace: kube-system
+    chart: metrics-server/metrics-server
+    version: 3.13.0
+  - name: external-dns
+    namespace: kube-system
+    chart: external-dns/external-dns
+    version: 1.18.0
+    installed: {{ eq (env "EXTERNAL_DNS_ENABLED") "true" }}
+    values:
+      - provider:
+          name: aws
+        sources: [ingress]
+        policy: upsert-only
+        registry: txt
+        txtOwnerId: {{ requiredEnv "EKS_CLUSTER_NAME" }}
+        domainFilters:
+          - {{ env "EXTERNAL_DNS_DOMAIN" | default "example.invalid" }}
+        serviceAccount:
+          create: true
+          name: external-dns
