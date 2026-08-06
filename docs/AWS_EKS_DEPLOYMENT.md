@@ -112,7 +112,45 @@ Do not print Secret data in logs or CI output.
 
 ## 6. Build and publish images
 
-Build both images from one source commit, scan them, emit SBOMs, sign the resulting ECR digests, and set those immutable digests in a private production values override. The repository workflow performs build, non-root-user, SBOM, and High/Critical vulnerability checks for pull requests.
+### Base image source and availability limits
+
+The Dockerfiles default to the Docker Official Images namespace in [AWS Public ECR Gallery](https://gallery.ecr.aws/) instead of Docker Hub. The references were resolved on 2026-08-06, verified as OCI multi-architecture indexes with both `linux/amd64` and `linux/arm64`, and pinned to the Public ECR index digest:
+
+| Build use | Pinned reference |
+| --- | --- |
+| Go builder | `public.ecr.aws/docker/library/golang:1.26-alpine@sha256:0178a641fbb4858c5f1b48e34bdaabe0350a330a1b1149aabd498d0699ff5fb2` |
+| Backend runtime | `public.ecr.aws/docker/library/alpine:3.21@sha256:48b0309ca019d89d40f670aa1bc06e426dc0931948452e8491e3d65087abc07d` |
+| Frontend build/runtime | `public.ecr.aws/docker/library/node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32` |
+
+Recheck an update before changing a digest:
+
+```bash
+docker buildx imagetools inspect public.ecr.aws/docker/library/golang:1.26-alpine
+docker buildx imagetools inspect public.ecr.aws/docker/library/alpine:3.21
+docker buildx imagetools inspect public.ecr.aws/docker/library/node:22-alpine
+```
+
+`GO_BASE_IMAGE`, `RUNTIME_BASE_IMAGE`, and `NODE_BASE_IMAGE` are build args for a controlled registry override. Overrides must use reviewed `repository:tag@sha256:digest` references and then repeat the build, SBOM, vulnerability, and signature checks. A tag-only automatic fallback is intentionally not implemented because it would make provenance dependent on which registry happened to respond.
+
+Public pulls can be anonymous, but AWS documents separate defaults: unauthenticated pulls at 1 pull/second, pulls to ECS/Fargate/EC2 resources at 10 pulls/second, and 500 GB/month for unauthenticated customers; the transfer allowance and AWS-resource pull rate are not adjustable. Authenticated pulls default to 10 pulls/second (adjustable), require `ecr-public:GetAuthorizationToken` and `sts:GetServiceBearerToken`, and use a token valid for 12 hours. Authenticate high-volume or shared CI builders without logging the token:
+
+```bash
+aws ecr-public get-login-password --region us-east-1 \
+  | docker login --username AWS --password-stdin public.ecr.aws
+```
+
+AWS Public ECR removes the observed Docker Hub base-layer dependency, but it does not make builds offline or eliminate all external availability risk:
+
+- `apk add` still reaches Alpine package mirrors, `go mod download` reaches configured Go module sources, and Corepack/pnpm may reach package registries.
+- Public ECR remains a public external service with quotas and possible network/service failures. Production CI should cache layers and, where required, import approved base images into private ECR, pin the private digest, and retain source/SBOM/signature provenance.
+- Public ECR and Docker Hub tag names do not guarantee permanent byte-for-byte parity. The Public ECR digest is the build contract; digest updates are explicit dependency changes.
+- Multi-architecture index pinning preserves amd64/arm64 selection, but every target architecture still requires its own build and runtime smoke test.
+
+AWS references: [pulling public images](https://docs.aws.amazon.com/AmazonECR/latest/public/docker-pull-ecr-image.html) and [Public ECR service quotas](https://docs.aws.amazon.com/AmazonECR/latest/public/public-service-quotas.html).
+
+### Build and publish application images
+
+Build both images from one source commit, scan them, emit SBOMs, sign the resulting ECR digests, and set those immutable digests in a private production values override. A network-enabled CI runner should run the build, non-root-user, SBOM, and High/Critical vulnerability checks.
 
 Terraform outputs the two ECR repositories. A minimal publish flow is:
 

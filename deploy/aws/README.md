@@ -19,6 +19,7 @@ It intentionally creates no SQS queue, DLQ, outbox relay, in-cluster agent worke
 - `terraform`: three-AZ VPC, EKS managed node group, RDS PostgreSQL 17 candidate, encrypted Redis replication group, S3/KMS, ECR, Secrets Manager shell, IAM/Pod Identity, ACM, and budget.
 - `addons/helmfile.yaml`: pinned AWS Load Balancer Controller, External Secrets, metrics-server, and optional ExternalDNS releases.
 - `kubernetes`: namespace and External Secrets examples.
+- Backend and frontend Dockerfiles default to the AWS Public ECR Docker Official Images namespace and pin the Go, Alpine, and Node multi-architecture indexes by digest; reviewed build args can override the registry references.
 
 ## Validation
 

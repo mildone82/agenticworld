@@ -37,6 +37,13 @@ fi
 
 grep -q '^USER 10001:10001$' "$ROOT/multica/Dockerfile"
 grep -q 'RUN_MIGRATIONS' "$ROOT/multica/docker/entrypoint.sh"
+grep -Fq 'ARG GO_BASE_IMAGE=public.ecr.aws/docker/library/golang:1.26-alpine@sha256:0178a641fbb4858c5f1b48e34bdaabe0350a330a1b1149aabd498d0699ff5fb2' "$ROOT/multica/Dockerfile"
+grep -Fq 'ARG RUNTIME_BASE_IMAGE=public.ecr.aws/docker/library/alpine:3.21@sha256:48b0309ca019d89d40f670aa1bc06e426dc0931948452e8491e3d65087abc07d' "$ROOT/multica/Dockerfile"
+grep -Fq 'ARG NODE_BASE_IMAGE=public.ecr.aws/docker/library/node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32' "$ROOT/multica/Dockerfile.web"
+if grep -Eq '^FROM (golang|alpine|node):' "$ROOT/multica/Dockerfile" "$ROOT/multica/Dockerfile.web"; then
+  echo "unqualified Docker Hub base image found" >&2
+  exit 1
+fi
 
 terraform -chdir="$ROOT/deploy/aws/terraform" fmt -check -recursive
 terraform -chdir="$ROOT/deploy/aws/terraform" init -backend=false -input=false

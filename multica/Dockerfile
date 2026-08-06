@@ -1,5 +1,10 @@
+# Public ECR avoids a hard dependency on Docker Hub for base image pulls.
+# Override these args only with reviewed, digest-pinned equivalents.
+ARG GO_BASE_IMAGE=public.ecr.aws/docker/library/golang:1.26-alpine@sha256:0178a641fbb4858c5f1b48e34bdaabe0350a330a1b1149aabd498d0699ff5fb2
+ARG RUNTIME_BASE_IMAGE=public.ecr.aws/docker/library/alpine:3.21@sha256:48b0309ca019d89d40f670aa1bc06e426dc0931948452e8491e3d65087abc07d
+
 # --- Build stage ---
-FROM golang:1.26-alpine AS builder
+FROM ${GO_BASE_IMAGE} AS builder
 
 RUN apk add --no-cache git
 
@@ -23,7 +28,7 @@ RUN cd server && CGO_ENABLED=0 go build -ldflags "-s -w" -o bin/backfill_task_us
 RUN cd server && CGO_ENABLED=0 go build -ldflags "-s -w" -o bin/backfill_codex_usage_cache ./cmd/backfill_codex_usage_cache
 
 # --- Runtime stage ---
-FROM alpine:3.21
+FROM ${RUNTIME_BASE_IMAGE}
 
 RUN apk add --no-cache ca-certificates tzdata
 
