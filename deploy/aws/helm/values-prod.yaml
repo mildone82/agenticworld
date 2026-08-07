@@ -48,6 +48,10 @@ ingress:
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}]'
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
+    # Restrict ALB inbound to the operator IP range; keeps the AWS Load
+    # Balancer Controller from resetting the managed SG to 0.0.0.0/0 on
+    # reconcile (171.213.238.67 is inside 171.213.238.64/26).
+    alb.ingress.kubernetes.io/inbound-cidrs: 171.213.238.64/26
 networkPolicy:
   ingressCidrs:
     - 10.40.0.0/16
