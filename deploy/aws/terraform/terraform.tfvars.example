@@ -29,3 +29,8 @@ tags = {
   Owner      = "platform"
   CostCenter = "engineering"
 }
+
+# Agent runtime EC2 (optional; required when provisioning deploy/aws/scripts/setup-runtime-ec2.sh)
+# runtime_public_subnet_id = "subnet-xxxxxxxxxxxxxxxxx"
+# runtime_ssh_cidrs        = ["203.0.113.10/32"]
+# runtime_public_key       = "ssh-ed25519 AAAA..."

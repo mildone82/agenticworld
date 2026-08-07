@@ -46,7 +46,7 @@ Production remains gated on all of the following:
 - A remote, encrypted Terraform backend with state locking; the example intentionally does not create its own backend
 - A release tag/digest pair for both images from the same Multica source revision
 
-Before applying infrastructure, review the plan for account, region, CIDRs, database deletion protection, NAT topology, public EKS endpoint settings, DNS, and budget recipients. `terraform apply` creates billable production resources and is intentionally a Stage 4 action.
+Before applying infrastructure, review the plan for account, region, CIDRs, database deletion protection, NAT topology, public EKS endpoint settings, DNS, and budget recipients. `terraform apply` creates billable production resources and is intentionally an operator-driven action.
 
 ## 4. Provision the AWS foundation
 

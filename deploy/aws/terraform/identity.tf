@@ -6,6 +6,8 @@ resource "aws_secretsmanager_secret" "application" {
 
 data "aws_partition" "current" {}
 
+data "aws_caller_identity" "current" {}
+
 resource "aws_iam_role" "application" {
   name = "${local.resource_name}-application"
   assume_role_policy = jsonencode({

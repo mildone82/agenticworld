@@ -138,7 +138,7 @@ module "database" {
   performance_insights_enabled          = true
   performance_insights_retention_period = 7
   create_monitoring_role                = false
-  monitoring_role_arn                   = "arn:aws-cn:iam::460592757249:role/rds-monitoring-role"
+  monitoring_role_arn                   = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:role/rds-monitoring-role"
   monitoring_interval                   = 60
   enabled_cloudwatch_logs_exports       = ["postgresql", "upgrade"]
 

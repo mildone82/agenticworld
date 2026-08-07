@@ -2,7 +2,7 @@
 
 ## 结论
 
-基于 `multica-ai/multica@854b6c172300a218e056e6bb30a361d59e0377e3` 的代码核查，Multica 的真实部署形态不是 AGE-6 假定的“API + SQS + 集群内 Agent Worker”。官方自托管拓扑是：
+基于 `multica-ai/multica@854b6c172300a218e056e6bb30a361d59e0377e3` 的代码核查，Multica 的真实部署形态不是 初版架构设计假定的“API + SQS + 集群内 Agent Worker”。官方自托管拓扑是：
 
 ```text
 browser ─HTTP/WS─> Next.js frontend :3000 ─HTTP/WS proxy─> Go backend :8080
@@ -34,7 +34,7 @@ local/desktop multica daemon ─HTTPS/WSS─> backend /api/daemon/*
 | `server` / `multica-backend` | Go Chi API、用户 WS、daemon WS、鉴权、调度器、Webhook worker、运行时清扫、渠道连接和媒体回收均在同一进程 | HTTP 8080；`GET /healthz`；用户 WS `/ws`；daemon WS `/api/daemon/ws`；REST `/api/*` | 必须连接 PostgreSQL。单实例可用内存 hub；多实例必须配置 Redis 才能跨实例实时 fanout，并应配置 S3 或 RWX 上传卷。官方 Helm 默认 1 副本、100m/256Mi request、1 CPU/1Gi limit，`Recreate` 策略。 |
 | `migrate` | backend 容器 entrypoint 在启动 server 前执行全部迁移 | PostgreSQL wire protocol 5432 | 迁移 runner 使用 advisory lock 处理并发启动。应作为发布门禁验证；不要让不兼容 schema 与旧 backend 混跑。 |
 | `postgres` | 唯一强制的持久状态层；业务数据、任务队列、租约、cron 执行审计、附件元数据 | PostgreSQL 5432 | Compose/Helm 默认 `pgvector/pgvector:pg17`。Helm 内置实例为单副本 10Gi PVC、100m/256Mi request、1 CPU/1Gi limit；生产应启用 `postgres.external.enabled=true` 并用托管 PostgreSQL。每个 backend 默认 pgx pool 为 max 25/min 5，扩副本时必须汇总连接预算。 |
-| Redis（可选） | backend 多实例的 sharded/legacy Redis Streams 实时 relay、daemon wakeup、liveness 与 runtime-local request store | Redis TCP/TLS（由 `REDIS_URL` 决定） | 不配置时 backend 明确退化为进程内 hub/single-node mode。AGE-6 未列出该生产横向扩容依赖。应在 ElastiCache/Valkey 与单 backend 之间做显式选择。 |
+| Redis（可选） | backend 多实例的 sharded/legacy Redis Streams 实时 relay、daemon wakeup、liveness 与 runtime-local request store | Redis TCP/TLS（由 `REDIS_URL` 决定） | 不配置时 backend 明确退化为进程内 hub/single-node mode。初版架构设计未列出该生产横向扩容依赖。应在 ElastiCache/Valkey 与单 backend 之间做显式选择。 |
 | S3/CloudFront（可选） | 附件/头像/渠道媒体对象 | AWS S3 HTTPS；可选 CloudFront | `S3_BUCKET` 为空时写 `/app/data/uploads`；Compose 使用 named volume，Helm 默认 5Gi RWO PVC。多 backend + RWO 不可调度；生产横向扩容建议 S3，并关闭 uploads PVC。 |
 | `multica` CLI + daemon | 本地/桌面运行时；检测 coding CLI、同步 workspace、领取任务、创建隔离 worktree、执行 agent、上报 transcript/usage/result | 出站 HTTPS REST + WSS `/api/daemon/ws`；WS 不可用时回退 HTTP polling/heartbeat。本机 loopback health 端口默认 19514 | 不在官方 backend Helm chart 中。默认 poll 30s、heartbeat 15s、机器级并发上限 20；单任务无绝对时限，idle watchdog 30m、tool watchdog 2h。使用本地 `~/multica_workspaces`、bare repo cache 和 agent session，因此需要可写临时盘、Git 与对应 coding CLI/凭据。资源与磁盘消耗取决于被检出仓库和 agent 工具，不能用 backend 的 100m/256Mi 画像代替。 |
 | 一次性工具 | `backfill_task_usage_hourly`、`backfill_codex_usage_cache` 等维护二进制随 backend 镜像发布 | PostgreSQL / 外部 API | 应按变更说明作为受控 Job 运行，不是常驻 worker。 |
@@ -97,7 +97,7 @@ RDS 选型前应以目标 engine/version 实测全部 297 个迁移，尤其确�
 | frontend | `REMOTE_API_URL`, `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_WS_URL`, `DOCS_URL` | 同源部署可由 frontend runtime proxy 转发。 |
 | daemon | server URL/token/profile、workspace root、poll/heartbeat、并发、timeout/watchdog、GC 与 agent executable path | 主要保存在 CLI profile/config，也可由 `MULTICA_*` 环境覆盖；daemon 主机需对应 agent 凭据。 |
 
-官方 Helm 只引用预创建的 `existingSecret`，并未自带 Secrets Manager CSI/External Secrets/Pod Identity。AGE-6 的密钥方案仍需平台层实现。
+官方 Helm 只引用预创建的 `existingSecret`，并未自带 Secrets Manager CSI/External Secrets/Pod Identity。初版架构设计的密钥方案仍需平台层实现。
 
 ## 镜像与构建
 
@@ -107,11 +107,11 @@ RDS 选型前应以目标 engine/version 实测全部 297 个迁移，尤其确�
 | `ghcr.io/multica-ai/multica-web` | `Dockerfile.web`：Node 22 + pnpm 10.28.2，Next.js standalone | UID 1001 `nextjs` 非 root，暴露 3000。 |
 | `pgvector/pgvector:pg17` | 外部官方镜像 | 仅适合开发/最小自托管；生产采用 external PostgreSQL。 |
 
-Compose 默认 `MULTICA_IMAGE_TAG=latest`，Helm 未固定 tag 时回退 `Chart.appVersion`（源码 chart 为 `latest`）。这推翻 AGE-6“已按 digest 部署”的隐含完成度；生产流水线必须固定 digest、生成 SBOM/扫描/签名，且 backend/frontend 使用同一发布版本。
+Compose 默认 `MULTICA_IMAGE_TAG=latest`，Helm 未固定 tag 时回退 `Chart.appVersion`（源码 chart 为 `latest`）。这推翻 初版架构设计“已按 digest 部署”的隐含完成度；生产流水线必须固定 digest、生成 SBOM/扫描/签名，且 backend/frontend 使用同一发布版本。
 
-## AGE-6 假设逐条对照
+## 初版架构设计假设逐条对照
 
-| AGE-6 假设/设计 | 结论 | 真实代码证据与影响 |
+| 初版架构设计假设/设计 | 结论 | 真实代码证据与影响 |
 |---|---|---|
 | HTTP/API 控制面 | **验证，但需拆成 frontend + backend** | Next.js 3000 + Go REST/WS 8080；不能只部署一个 API Deployment。 |
 | API 完全无状态、可直接 3 副本 | **部分推翻** | 本地 uploads 和 in-memory hub/store 是默认路径；多副本至少需要 S3/RWX + Redis，并重新验证 embedded workers、连接池和迁移。官方默认 1 副本/Recreate。 |
