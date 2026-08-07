@@ -1,6 +1,6 @@
 # Multica AWS deployment artifacts
 
-This directory implements the Stage 3 EKS path from the Gate 0 architecture review. It deploys only the real Multica control-plane topology:
+This directory implements the production EKS path from the verified architecture review. It deploys only the real Multica control-plane topology:
 
 - Next.js frontend on port 3000
 - Go backend on ports 8080 (HTTP/WSS) and 9090 (private metrics)
@@ -25,4 +25,4 @@ It intentionally creates no SQS queue, DLQ, outbox relay, in-cluster agent worke
 
 Run `./scripts/validate-deployment.sh`. The script lints and renders both Helm profiles, validates their schema and topology invariants, rejects forbidden resources, checks the non-root backend image contract, and runs `terraform fmt`/`validate`.
 
-No `terraform apply` is part of Stage 3. See `docs/AWS_EKS_DEPLOYMENT.md` for deployment, migration, daemon-channel verification, rollback, and production gates.
+`terraform apply` is intentionally a separate, operator-driven step. See `docs/AWS_EKS_DEPLOYMENT.md` for deployment, migration, daemon-channel verification, rollback, and production gates.

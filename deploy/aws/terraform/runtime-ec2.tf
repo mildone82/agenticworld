@@ -17,13 +17,13 @@ variable "runtime_ami_id" {
 }
 
 variable "runtime_public_subnet_id" {
-  type    = string
-  default = "subnet-004019c3fcf4b89f6" # multica-prod-public-cn-northwest-1a
+  type        = string
+  description = "Public subnet for the runtime EC2 (e.g. one of the VPC public subnets). Required; provide via tfvars or -var."
 }
 
 variable "runtime_ssh_cidrs" {
-  type    = list(string)
-  default = ["69.234.227.150/32"] # operator egress; tighten as needed
+  type        = list(string)
+  description = "Operator egress CIDRs allowed to SSH to the runtime EC2 (e.g. [\"203.0.113.10/32\"]). Required; provide via tfvars or -var."
 }
 
 variable "runtime_public_key" {

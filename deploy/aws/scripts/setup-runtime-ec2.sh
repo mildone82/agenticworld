@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Provision the multica agent runtime EC2 and register its kiro runtime.
 #
-# Validated 2026-08-06 against the stage-4 deployment:
+# Validated 2026-08-06 against the reference deployment:
 #   - EC2: AL2023 arm64 (t4g.medium), public ALB subnet, SSH from operator IP
 #   - kiro-cli installed via cli.kiro.dev installer
 #   - multica CLI copied from the workspace host (must match server version)
@@ -12,19 +12,35 @@
 #
 # Prereqs: terraform apply of deploy/aws/terraform, a multica PAT for the
 # owning user (POST /api/tokens), and the multica binary matching the server.
+# runtime_public_key comes from tfvars, or export RUNTIME_PUBLIC_KEY here.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TF_DIR="${SCRIPT_DIR}/../terraform"
 REGION="${AWS_REGION:-cn-northwest-1}"
-OPERATOR_IP="${OPERATOR_IP:-69.234.227.150}"
-ALB_DNS="${ALB_DNS:-k8s-multica-multica-4009a1c0af-2053026646.cn-northwest-1.elb.amazonaws.com.cn}"
-WORKSPACE_ID="${WORKSPACE_ID:-59fb09ee-3f0a-407e-9d7d-176224ef2ef7}" # agentic-engineering
+OPERATOR_IP="${OPERATOR_IP:-}"          # required: operator egress IP, SSH is restricted to it
+ALB_DNS="${ALB_DNS:-}"                  # required: public DNS of the application ALB
+WORKSPACE_ID="${WORKSPACE_ID:-}"        # required: target multica workspace UUID
+SUBNET_ID="${SUBNET_ID:-}"              # required: public subnet for the runtime EC2
 MULTICA_BIN="${MULTICA_BIN:-/usr/local/bin/multica}"
 INSTANCE_ID=""
 
+for v in OPERATOR_IP ALB_DNS WORKSPACE_ID SUBNET_ID; do
+  if [[ -z "${!v}" ]]; then
+    echo "ERROR: ${v} is required (export it before running)" >&2
+    exit 1
+  fi
+done
+
 echo "==> [1/6] Terraform: create runtime EC2 + SG + keypair"
+EXTRA_VARS=()
+if [[ -n "${RUNTIME_PUBLIC_KEY:-}" ]]; then
+  EXTRA_VARS+=(-var="runtime_public_key=${RUNTIME_PUBLIC_KEY}")
+fi
 terraform -chdir="${TF_DIR}" apply -auto-approve \
+  -var="runtime_ssh_cidrs=[\"${OPERATOR_IP}/32\"]" \
+  -var="runtime_public_subnet_id=${SUBNET_ID}" \
+  "${EXTRA_VARS[@]}" \
   -target=aws_key_pair.runtime \
   -target=aws_security_group.runtime \
   -target=aws_instance.runtime
