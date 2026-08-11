@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { hashKey, useMutation, useQueryClient, type QueryKey } from "@tanstack/react-query";
+import { hashKey, useMutation, useQueryClient, type QueryClient, type QueryKey } from "@tanstack/react-query";
 import { api } from "../api";
 import {
   issueKeys,
@@ -198,33 +198,34 @@ export function useLoadMoreByAssigneeGroup(
 // Issue CRUD
 // ---------------------------------------------------------------------------
 
+export function reconcileCreatedIssue(qc: QueryClient, wsId: string, newIssue: Issue) {
+  for (const [key, data] of qc.getQueriesData<ListIssuesCache>({ queryKey: issueKeys.list(wsId) })) {
+    if (data) qc.setQueryData<ListIssuesCache>(key, addIssueToBuckets(data, newIssue));
+  }
+  useRecentIssuesStore.getState().recordVisit(wsId, newIssue.id);
+  if (newIssue.parent_issue_id) {
+    qc.invalidateQueries({ queryKey: issueKeys.children(wsId, newIssue.parent_issue_id) });
+    qc.invalidateQueries({ queryKey: issueKeys.childProgress(wsId) });
+  }
+}
+
+export function settleCreatedIssue(qc: QueryClient, wsId: string) {
+  qc.invalidateQueries({ queryKey: issueKeys.list(wsId) });
+  qc.invalidateQueries({ queryKey: issueKeys.flatAll(wsId) });
+  qc.invalidateQueries({ queryKey: issueKeys.tableAll(wsId) });
+  qc.invalidateQueries({ queryKey: issueKeys.assigneeGroupsAll(wsId) });
+  qc.invalidateQueries({ queryKey: issueKeys.myAssigneeGroupsAll(wsId) });
+  qc.invalidateQueries({ queryKey: issueKeys.projectGanttAll(wsId) });
+  qc.invalidateQueries({ queryKey: projectKeys.all(wsId) });
+}
+
 export function useCreateIssue() {
   const qc = useQueryClient();
   const wsId = useWorkspaceId();
   return useMutation({
     mutationFn: (data: CreateIssueRequest) => api.createIssue(data),
-    onSuccess: (newIssue) => {
-      for (const [key, data] of qc.getQueriesData<ListIssuesCache>({ queryKey: issueKeys.list(wsId) })) {
-        if (data) qc.setQueryData<ListIssuesCache>(key, addIssueToBuckets(data, newIssue));
-      }
-      // Surface the just-created issue in cmd+k's Recent list without
-      // requiring the user to open it first.
-      useRecentIssuesStore.getState().recordVisit(wsId, newIssue.id);
-      // Invalidate parent's children query so sub-issues list updates immediately
-      if (newIssue.parent_issue_id) {
-        qc.invalidateQueries({ queryKey: issueKeys.children(wsId, newIssue.parent_issue_id) });
-        qc.invalidateQueries({ queryKey: issueKeys.childProgress(wsId) });
-      }
-    },
-    onSettled: () => {
-      qc.invalidateQueries({ queryKey: issueKeys.list(wsId) });
-      qc.invalidateQueries({ queryKey: issueKeys.flatAll(wsId) });
-      qc.invalidateQueries({ queryKey: issueKeys.tableAll(wsId) });
-      qc.invalidateQueries({ queryKey: issueKeys.assigneeGroupsAll(wsId) });
-      qc.invalidateQueries({ queryKey: issueKeys.myAssigneeGroupsAll(wsId) });
-      qc.invalidateQueries({ queryKey: issueKeys.projectGanttAll(wsId) });
-      qc.invalidateQueries({ queryKey: projectKeys.all(wsId) });
-    },
+    onSuccess: (newIssue) => reconcileCreatedIssue(qc, wsId, newIssue),
+    onSettled: () => settleCreatedIssue(qc, wsId),
   });
 }
 

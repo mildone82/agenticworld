@@ -713,6 +713,25 @@ type IssueSubscriber struct {
 	OptOutScope    pgtype.Text        `json:"opt_out_scope"`
 }
 
+type IssueTemplate struct {
+	ID            pgtype.UUID        `json:"id"`
+	WorkspaceID   pgtype.UUID        `json:"workspace_id"`
+	Name          string             `json:"name"`
+	Title         string             `json:"title"`
+	Description   string             `json:"description"`
+	Priority      string             `json:"priority"`
+	Status        string             `json:"status"`
+	ProjectID     pgtype.UUID        `json:"project_id"`
+	AssigneeType  pgtype.Text        `json:"assignee_type"`
+	AssigneeID    pgtype.UUID        `json:"assignee_id"`
+	ParentIssueID pgtype.UUID        `json:"parent_issue_id"`
+	Stage         pgtype.Int4        `json:"stage"`
+	WorkMode      pgtype.Text        `json:"work_mode"`
+	CreatedByID   pgtype.UUID        `json:"created_by_id"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
+}
+
 type IssueToLabel struct {
 	IssueID pgtype.UUID `json:"issue_id"`
 	LabelID pgtype.UUID `json:"label_id"`

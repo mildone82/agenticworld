@@ -2414,7 +2414,10 @@ func (h *Handler) CreateIssue(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
+	h.createIssueFromRequest(w, r, req)
+}
 
+func (h *Handler) createIssueFromRequest(w http.ResponseWriter, r *http.Request, req CreateIssueRequest) {
 	if req.Title == "" {
 		writeError(w, http.StatusBadRequest, "title is required")
 		return

@@ -111,6 +111,10 @@ import type {
   CreateQuickActionRequest,
   UpdateQuickActionRequest,
   ListQuickActionsResponse,
+  IssueTemplate,
+  IssueTemplateInput,
+  ListIssueTemplatesResponse,
+  InstantiateIssueTemplateRequest,
   UpdatePropertyRequest,
   ListPropertiesResponse,
   IssuePropertiesResponse,
@@ -299,6 +303,9 @@ import {
   IssuePropertiesResponseSchema,
   QuickActionSchema,
   ListQuickActionsResponseSchema,
+  IssueTemplateSchema,
+  ListIssueTemplatesResponseSchema,
+  EMPTY_LIST_ISSUE_TEMPLATES_RESPONSE,
   QuickActionRenderSchema,
   EMPTY_QUICK_ACTION,
   EMPTY_LIST_QUICK_ACTIONS_RESPONSE,
@@ -2782,6 +2789,46 @@ export class ApiClient {
 
   async deleteQuickAction(id: string): Promise<void> {
     await this.fetch<void>(`/api/quick-actions/${id}`, { method: "DELETE" });
+  }
+
+  async listIssueTemplates(): Promise<ListIssueTemplatesResponse> {
+    let raw: unknown;
+    try {
+      raw = await this.fetch<unknown>("/api/issue-templates");
+    } catch (error) {
+      if (error instanceof Error && "status" in error && (error as { status?: number }).status === 404) {
+        return EMPTY_LIST_ISSUE_TEMPLATES_RESPONSE;
+      }
+      throw error;
+    }
+    return parseWithFallback(raw, ListIssueTemplatesResponseSchema, EMPTY_LIST_ISSUE_TEMPLATES_RESPONSE, {
+      endpoint: "GET /api/issue-templates",
+    });
+  }
+
+  async createIssueTemplate(data: IssueTemplateInput): Promise<IssueTemplate> {
+    const raw = await this.fetch<unknown>("/api/issue-templates", { method: "POST", body: JSON.stringify(data) });
+    const template = parseWithFallback<IssueTemplate | null>(raw, IssueTemplateSchema, null, { endpoint: "POST /api/issue-templates" });
+    if (!template) throw new Error("Invalid issue template response");
+    return template;
+  }
+
+  async replaceIssueTemplate(id: string, data: IssueTemplateInput): Promise<IssueTemplate> {
+    const raw = await this.fetch<unknown>(`/api/issue-templates/${id}`, { method: "PUT", body: JSON.stringify(data) });
+    const template = parseWithFallback<IssueTemplate | null>(raw, IssueTemplateSchema, null, { endpoint: "PUT /api/issue-templates/{id}" });
+    if (!template) throw new Error("Invalid issue template response");
+    return template;
+  }
+
+  async deleteIssueTemplate(id: string): Promise<void> {
+    await this.fetch<void>(`/api/issue-templates/${id}`, { method: "DELETE" });
+  }
+
+  async instantiateIssueTemplate(id: string, data: InstantiateIssueTemplateRequest = {}): Promise<Issue> {
+    const raw = await this.fetch<unknown>(`/api/issue-templates/${id}/instantiate`, { method: "POST", body: JSON.stringify(data) });
+    const issue = parseWithFallback<Issue | null>(raw, CreateIssueResponseSchema, null, { endpoint: "POST /api/issue-templates/{id}/instantiate" });
+    if (!issue) throw new Error("Invalid issue response");
+    return issue;
   }
 
   /**
