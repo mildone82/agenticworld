@@ -35,6 +35,8 @@ import type {
   ListPropertiesResponse,
   QuickAction,
   ListQuickActionsResponse,
+  IssueTemplate,
+  ListIssueTemplatesResponse,
   IssuePropertiesResponse,
   IssueTableGroupDescriptor,
   IssueTableFacetsResponse,
@@ -305,6 +307,43 @@ export const ListPropertiesResponseSchema = z.object({
   total: z.number().default(0),
 }).loose();
 
+
+// Issue templates are strict persisted blueprints. List callers degrade a
+// malformed envelope to an empty catalog; write/instantiate callers use a
+// null sentinel and reject so a broken response can never look successful.
+export const IssueTemplateSchema = z.object({
+  id: z.string().min(1),
+  workspace_id: z.string().min(1),
+  name: z.string(),
+  title: z.string(),
+  description: z.string(),
+  priority: z.enum(["urgent", "high", "medium", "low", "none"]),
+  status: z.enum(["backlog", "todo", "in_progress", "in_review", "done", "blocked", "cancelled"]),
+  project_id: z.string().nullable(),
+  assignee_type: z.enum(["member", "agent", "squad"]).nullable(),
+  assignee_id: z.string().nullable(),
+  parent_issue_id: z.string().nullable(),
+  stage: z.number().int().min(1).nullable(),
+  work_mode: z.enum(["serial", "swarm"]).nullable(),
+  created_by_id: z.string(),
+  created_at: z.string(),
+  updated_at: z.string(),
+}).loose();
+
+export const EMPTY_ISSUE_TEMPLATE: IssueTemplate = {
+  id: "", workspace_id: "", name: "", title: "", description: "",
+  priority: "none", status: "todo", project_id: null,
+  assignee_type: null, assignee_id: null, parent_issue_id: null,
+  stage: null, work_mode: null, created_by_id: "", created_at: "", updated_at: "",
+};
+
+export const ListIssueTemplatesResponseSchema = z.object({
+  issue_templates: z.array(IssueTemplateSchema).default([]),
+}).loose();
+
+export const EMPTY_LIST_ISSUE_TEMPLATES_RESPONSE: ListIssueTemplatesResponse = {
+  issue_templates: [],
+};
 export const EMPTY_LIST_PROPERTIES_RESPONSE: ListPropertiesResponse = {
   properties: [],
   total: 0,

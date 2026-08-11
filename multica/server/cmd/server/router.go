@@ -1185,6 +1185,18 @@ func NewRouterWithOptions(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus
 				})
 			})
 
+			// Issue templates are workspace-shared blueprints. Management handlers
+			// enforce human owner/admin; every member may list and instantiate.
+			r.Route("/api/issue-templates", func(r chi.Router) {
+				r.Get("/", h.ListIssueTemplates)
+				r.Post("/", h.CreateIssueTemplate)
+				r.Route("/{id}", func(r chi.Router) {
+					r.Put("/", h.ReplaceIssueTemplate)
+					r.Delete("/", h.DeleteIssueTemplate)
+					r.Post("/instantiate", h.InstantiateIssueTemplate)
+				})
+			})
+
 			// Custom issue properties (definitions; values live under /api/issues/{id}/properties)
 			r.Route("/api/properties", func(r chi.Router) {
 				r.Get("/", h.ListProperties)

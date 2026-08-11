@@ -253,3 +253,12 @@ export type {
   BillingCheckoutSessionStatus,
   CreateBillingPortalSessionResponse,
 } from "./billing";
+
+export type {
+  IssueTemplate,
+  IssueTemplateInput,
+  IssueTemplateWorkMode,
+  ListIssueTemplatesResponse,
+  InstantiateIssueTemplateRequest,
+  InstantiateIssueTemplateResponse,
+} from "./issue-template";

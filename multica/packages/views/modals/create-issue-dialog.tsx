@@ -8,6 +8,8 @@ import {
   type CreateMode,
 } from "@multica/core/issues/stores/create-mode-store";
 import { AgentCreatePanel } from "./quick-create-issue";
+import { IssueTemplatesPanel } from "./issue-templates-panel";
+import { useT } from "../i18n";
 import { ManualCreatePanel, manualDialogContentClass } from "./create-issue";
 
 /**
@@ -39,7 +41,9 @@ export function CreateIssueDialog({
   initialMode: CreateMode;
   data?: Record<string, unknown> | null;
 }) {
+  const { t } = useT("modals");
   const setLastMode = useCreateModeStore((s) => s.setLastMode);
+  const [surface, setSurface] = useState<"new" | "templates">("new");
   const [mode, setMode] = useState<CreateMode>(initialMode);
   const [panelData, setPanelData] = useState(data ?? null);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -51,7 +55,13 @@ export function CreateIssueDialog({
   };
 
   const className =
-    mode === "agent"
+    surface === "templates"
+      ? cn(
+          "p-0 gap-0 flex flex-col overflow-hidden",
+          "!top-1/2 !left-1/2 !-translate-x-1/2 !-translate-y-1/2",
+          "!max-w-4xl !w-full !h-5/6",
+        )
+      : mode === "agent"
       ? cn(
           "p-0 gap-0 flex flex-col overflow-hidden",
           "!top-1/2 !left-1/2 !-translate-x-1/2 !-translate-y-1/2",
@@ -76,7 +86,25 @@ export function CreateIssueDialog({
         showCloseButton={false}
         className={className}
       >
-        {mode === "agent" ? (
+        <div className="flex shrink-0 border-b px-4 pt-2">
+          <button
+            type="button"
+            className={cn("border-b-2 px-3 py-2 text-sm", surface === "new" ? "border-primary font-medium" : "border-transparent text-muted-foreground")}
+            onClick={() => setSurface("new")}
+          >
+            {t(($) => $.issue_templates.tab_new)}
+          </button>
+          <button
+            type="button"
+            className={cn("border-b-2 px-3 py-2 text-sm", surface === "templates" ? "border-primary font-medium" : "border-transparent text-muted-foreground")}
+            onClick={() => setSurface("templates")}
+          >
+            {t(($) => $.issue_templates.tab_templates)}
+          </button>
+        </div>
+        {surface === "templates" ? (
+          <IssueTemplatesPanel onClose={onClose} />
+        ) : mode === "agent" ? (
           <AgentCreatePanel
             onClose={onClose}
             onSwitchMode={switchTo("manual")}

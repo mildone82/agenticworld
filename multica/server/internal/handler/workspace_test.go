@@ -248,6 +248,18 @@ RETURNING id
 		_, _ = testPool.Exec(context.Background(), `DELETE FROM issue_property WHERE id = $1`, propertyID)
 	})
 
+	var issueTemplateID string
+	if err := testPool.QueryRow(ctx, `
+INSERT INTO issue_template (workspace_id, name, title, created_by_id)
+VALUES ($1, 'Delete cleanup template', 'Workspace delete issue template', $2)
+RETURNING id
+`, wsID, testUserID).Scan(&issueTemplateID); err != nil {
+		t.Fatalf("create issue template: %v", err)
+	}
+	t.Cleanup(func() {
+		_, _ = testPool.Exec(context.Background(), `DELETE FROM issue_template WHERE id = $1`, issueTemplateID)
+	})
+
 	var runtimeID string
 	if err := testPool.QueryRow(ctx, `
 INSERT INTO agent_runtime (
@@ -422,6 +434,14 @@ VALUES ($1, $2, gen_random_uuid(), 's3://workspace-delete/pending-object')
 	}
 	if propertyCount != 0 {
 		t.Fatalf("issue properties were not cleaned up for deleted workspace: %d", propertyCount)
+	}
+
+	var issueTemplateCount int
+	if err := testPool.QueryRow(ctx, `SELECT COUNT(*) FROM issue_template WHERE id = $1`, issueTemplateID).Scan(&issueTemplateCount); err != nil {
+		t.Fatalf("verify issue template cleanup: %v", err)
+	}
+	if issueTemplateCount != 0 {
+		t.Fatalf("issue templates were not cleaned up for deleted workspace: %d", issueTemplateCount)
 	}
 
 	for _, table := range []string{
