@@ -56,6 +56,14 @@ const backgroundTokens = [
 
 type Rgb = [number, number, number];
 
+function hexToRgb(value: string): Rgb {
+  const match = /^#([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i.exec(value);
+  if (!match?.[1] || !match[2] || !match[3]) {
+    throw new Error(`expected a six-digit hex colour, got "${value}"`);
+  }
+  return [Number.parseInt(match[1], 16), Number.parseInt(match[2], 16), Number.parseInt(match[3], 16)];
+}
+
 function readBlock(source: string, selector: string): Map<string, string> {
   const start = source.indexOf(`${selector} {`);
   if (start < 0) throw new Error(`${selector} block not found`);
@@ -352,6 +360,40 @@ function collectSourceFiles(dir: string, found: string[] = []): string[] {
 const lineOf = (source: string, index: number) =>
   source.slice(0, index).split("\n").length;
 
+/**
+ * Literal colours and white are valid on photos, gradients, and inverted
+ * cards, but slash alpha makes their contrast unknowable from the colour name.
+ * Explicit solid-background features can opt into this stricter detector.
+ */
+const alphaOnLiteralText =
+  /[\w:[\]./-]*\btext-(?:white|\[[^\]]+\])\/(?:\d+|\[[^\]]+\])/g;
+
+function findLiteralTextAlpha(source: string): { line: number; found: string }[] {
+  const stripped = stripComments(source);
+  return [...stripped.matchAll(alphaOnLiteralText)].map((match) => ({
+    line: lineOf(stripped, match.index),
+    found: match[0],
+  }));
+}
+
+const workflowPath =
+  "apps/web/features/landing/components/aws-delivery-workflow.tsx";
+const workflowSource = () => readFileSync(resolve(repoRoot, workflowPath), "utf8");
+const workflowSolidToneCases = [
+  { name: "light overline on hero", foreground: "#59616d", background: "#f6f7fb" },
+  { name: "light overline on white", foreground: "#59616d", background: "#ffffff" },
+  { name: "light overline on summary", foreground: "#59616d", background: "#f7f8fa" },
+  { name: "hero secondary heading", foreground: "#687283", background: "#f6f7fb" },
+  { name: "secondary copy on hero", foreground: "#505966", background: "#f6f7fb" },
+  { name: "secondary copy on white", foreground: "#505966", background: "#ffffff" },
+  { name: "secondary copy on summary", foreground: "#505966", background: "#f7f8fa" },
+  { name: "hero metadata chip", foreground: "#4b5563", background: "#ffffff" },
+  { name: "dark panel secondary", foreground: "#aab0ba", background: "#0a0d12" },
+  { name: "dark panel metadata", foreground: "#b4bac4", background: "#0a0d12" },
+  { name: "dark panel body", foreground: "#c3c7ce", background: "#0a0d12" },
+  { name: "dark panel outcome", foreground: "#e4e7eb", background: "#0a0d12" },
+] as const;
+
 /** Both ways of writing "dim this tone", reported together. */
 function findTransparencyAsHierarchy(source: string): { line: number; found: string }[] {
   const stripped = stripComments(source);
@@ -438,6 +480,53 @@ describe("text contrast", () => {
       );
     },
   );
+
+  describe("/workflow literal text tones", () => {
+    it.each(workflowSolidToneCases)(
+      "$name clears WCAG AA",
+      ({ foreground, background }) => {
+        const ratio = contrastRatio(hexToRgb(foreground), hexToRgb(background));
+
+        expect(workflowSource()).toContain(`text-[${foreground}]`);
+        expect(
+          Number(ratio.toFixed(2)),
+          `${foreground} on ${background} is ${ratio.toFixed(2)}:1`,
+        ).toBeGreaterThanOrEqual(WCAG_AA_NORMAL_TEXT);
+      },
+    );
+
+    describe("the literal text alpha detector", () => {
+      const caught = (candidate: string) => findLiteralTextAlpha(candidate).length > 0;
+
+      it.each([
+        ["white alpha", `<span className="text-white/60" />`],
+        ["white arbitrary alpha", `<span className="text-white/[0.6]" />`],
+        ["arbitrary colour alpha", `<span className="text-[#0a0d12]/48" />`],
+        ["arbitrary colour arbitrary alpha", `<span className="text-[#0a0d12]/[48%]" />`],
+      ])("catches %s", (_shape, candidate) => {
+        expect(caught(candidate)).toBe(true);
+      });
+
+      it.each([
+        ["solid white", `<span className="text-white" />`],
+        ["solid arbitrary colour", `<span className="text-[#59616d]" />`],
+        ["alpha on a background", `<span className="bg-white/60 text-[#59616d]" />`],
+      ])("leaves %s alone", (_shape, candidate) => {
+        expect(caught(candidate)).toBe(false);
+      });
+    });
+
+    it("uses solid text tones on its explicit backgrounds", () => {
+      const violations = findLiteralTextAlpha(workflowSource());
+
+      expect(
+        violations,
+        `Transparent literal text in ${workflowPath}:\n${violations
+          .map(({ line, found }) => `${workflowPath}:${line}  ${found}`)
+          .join("\n")}`,
+      ).toEqual([]);
+    });
+  });
 
   /**
    * The detector is the part of this guard most likely to rot, because every
