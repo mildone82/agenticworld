@@ -149,17 +149,17 @@ export function AwsDeliveryWorkflow() {
     <section className="overflow-hidden">
       <div className="border-b border-[#0a0d12]/10 bg-[#f6f7fb]">
         <div className="mx-auto max-w-[1180px] px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
-          <p className="text-micro font-semibold uppercase tracking-[0.16em] text-[#0a0d12]/48">
+          <p className="text-micro font-semibold uppercase tracking-[0.16em] text-[#59616d]">
             真实案例回放 · AWS EKS + PostgreSQL
           </p>
           <h1 className="mt-4 max-w-[850px] landing-serif text-[3rem] leading-[1.02] tracking-[-0.035em] sm:text-[4rem] lg:text-[5rem]">
             从研究到生产上线，
-            <span className="text-[#0a0d12]/42">人和智能体如何共同交付。</span>
+            <span className="text-[#687283]">人和智能体如何共同交付。</span>
           </h1>
-          <p className="mt-7 max-w-[710px] text-body-lg leading-8 text-[#0a0d12]/67 sm:text-title">
+          <p className="mt-7 max-w-[710px] text-body-lg leading-8 text-[#505966] sm:text-title">
             这不是理想流程图，而是一次实际部署工作中的协作轨迹：用户提出目标，智能体分阶段研究、设计、实现和部署，用户再以真实结果驱动下一轮改进。
           </p>
-          <div className="mt-9 flex flex-wrap gap-3 text-label text-[#0a0d12]/70">
+          <div className="mt-9 flex flex-wrap gap-3 text-label text-[#4b5563]">
             {["4 个串行阶段", "多角色协作", "真实反馈闭环", "PR 审查后生产发布"].map(
               (label) => (
                 <span key={label} className="rounded-full border border-[#0a0d12]/12 bg-white px-3.5 py-2">
@@ -174,10 +174,10 @@ export function AwsDeliveryWorkflow() {
       <div className="mx-auto max-w-[1180px] px-4 py-14 sm:px-6 sm:py-20 lg:px-8">
         <div className="mb-7 flex flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="text-micro font-semibold uppercase tracking-[0.15em] text-[#0a0d12]/45">
+            <p className="text-micro font-semibold uppercase tracking-[0.15em] text-[#59616d]">
               交互回放
             </p>
-            <p className="mt-1 text-body text-[#0a0d12]/63">
+            <p className="mt-1 text-body text-[#505966]">
               选择任一节点，或自动播放这次交付如何不断获得反馈与推进。
             </p>
           </div>
@@ -217,13 +217,13 @@ export function AwsDeliveryWorkflow() {
                     <span
                       className={cn(
                         "mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-lg",
-                        isActive ? accentClassByKind[event.kind] : "bg-[#0a0d12]/[0.06] text-[#0a0d12]/72",
+                        isActive ? accentClassByKind[event.kind] : "bg-[#0a0d12]/[0.06] text-[#59616d]",
                       )}
                     >
                       <ActorIcon kind={event.kind} />
                     </span>
                     <span className="min-w-0">
-                      <span className={cn("block text-caption font-medium", isActive ? "text-white/60" : "text-[#0a0d12]/48")}>
+                      <span className={cn("block text-caption font-medium", isActive ? "text-[#b4bac4]" : "text-[#59616d]")}>
                         {String(index + 1).padStart(2, "0")} · {event.phase} · {event.actor}
                       </span>
                       <span className="mt-1 block text-body font-semibold leading-snug">{event.title}</span>
@@ -239,10 +239,10 @@ export function AwsDeliveryWorkflow() {
             <div aria-hidden className="absolute -bottom-32 -left-24 size-64 rounded-full bg-sky-400/15 blur-3xl" />
             <div className="relative">
               <div className="flex items-center justify-between gap-4">
-                <span className="rounded-full border border-white/15 bg-white/8 px-3 py-1.5 text-caption font-medium text-white/72">
+                <span className="rounded-full border border-white/15 bg-white/8 px-3 py-1.5 text-caption font-medium text-[#c3c7ce]">
                   第 {activeIndex + 1} / {events.length} 步
                 </span>
-                <span className="inline-flex items-center gap-2 text-caption text-white/56">
+                <span className="inline-flex items-center gap-2 text-caption text-[#b4bac4]">
                   <span className="relative flex size-2.5">
                     {isPlaying ? <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-300 opacity-70 motion-reduce:hidden" /> : null}
                     <span className="relative inline-flex size-2.5 rounded-full bg-emerald-300" />
@@ -257,18 +257,18 @@ export function AwsDeliveryWorkflow() {
                 </span>
                 <div>
                   <p className="text-label font-semibold">{activeEvent.actor}</p>
-                  <p className="text-caption text-white/56">{activeEvent.actorDetail}</p>
+                  <p className="text-caption text-[#b4bac4]">{activeEvent.actorDetail}</p>
                 </div>
               </div>
 
               <h2 className="mt-8 landing-serif text-[2.4rem] leading-[1.05] tracking-[-0.025em] sm:text-[3rem]">
                 {activeEvent.title}
               </h2>
-              <p className="mt-5 text-body-lg leading-8 text-white/72">{activeEvent.summary}</p>
+              <p className="mt-5 text-body-lg leading-8 text-[#c3c7ce]">{activeEvent.summary}</p>
 
               <div className="mt-8 rounded-2xl border border-white/12 bg-white/[0.06] p-5">
-                <p className="text-micro font-semibold uppercase tracking-[0.14em] text-white/42">这个节点带来的结果</p>
-                <p className="mt-2 flex gap-2 text-body font-medium leading-7 text-white/90">
+                <p className="text-micro font-semibold uppercase tracking-[0.14em] text-[#aab0ba]">这个节点带来的结果</p>
+                <p className="mt-2 flex gap-2 text-body font-medium leading-7 text-[#e4e7eb]">
                   <CheckCircle2 className="mt-1 size-4 shrink-0 text-emerald-300" aria-hidden />
                   {activeEvent.outcome}
                 </p>
@@ -297,19 +297,19 @@ export function AwsDeliveryWorkflow() {
         </div>
 
         <div className="mt-14 rounded-2xl border border-[#0a0d12]/10 bg-[#f7f8fa] p-6 sm:p-8">
-          <p className="text-micro font-semibold uppercase tracking-[0.15em] text-[#0a0d12]/45">为什么这个过程可控</p>
+          <p className="text-micro font-semibold uppercase tracking-[0.15em] text-[#59616d]">为什么这个过程可控</p>
           <div className="mt-5 grid gap-5 sm:grid-cols-3">
             <div>
               <h2 className="text-title-sm font-semibold">任务是可见的</h2>
-              <p className="mt-2 text-body leading-7 text-[#0a0d12]/62">阶段、指派、状态、产物和评论都落在同一个工作流内，不依赖口头同步。</p>
+              <p className="mt-2 text-body leading-7 text-[#505966]">阶段、指派、状态、产物和评论都落在同一个工作流内，不依赖口头同步。</p>
             </div>
             <div>
               <h2 className="text-title-sm font-semibold">结论能被校正</h2>
-              <p className="mt-2 text-body leading-7 text-[#0a0d12]/62">研究先核验真实系统，再让架构和实现建立在可靠事实之上，而非沿用错误假设。</p>
+              <p className="mt-2 text-body leading-7 text-[#505966]">研究先核验真实系统，再让架构和实现建立在可靠事实之上，而非沿用错误假设。</p>
             </div>
             <div>
               <h2 className="text-title-sm font-semibold">上线不是终点</h2>
-              <p className="mt-2 text-body leading-7 text-[#0a0d12]/62">用户在生产结果上继续反馈，智能体团队再进入修改、审查和发布的下一轮闭环。</p>
+              <p className="mt-2 text-body leading-7 text-[#505966]">用户在生产结果上继续反馈，智能体团队再进入修改、审查和发布的下一轮闭环。</p>
             </div>
           </div>
         </div>
