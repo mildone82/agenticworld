@@ -6,3 +6,8 @@ production-overrides.yaml
 prepared-external-secret.yaml
 __pycache__/
 *.py[cod]
+
+# Verification runs. evidence/README.md stays tracked.
+evidence/runs/
+evidence/current-run
+artifacts/
