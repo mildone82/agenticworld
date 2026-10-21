@@ -1,0 +1,144 @@
+name: verify
+
+on:
+  pull_request:
+  push:
+    branches: [bootstrap, main]
+
+concurrency:
+  group: verify-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # Shell decision tables, plus the AWS gate. BLOCKED (exit 2) does not fail
+  # the job: GitHub-hosted runners have no EKS cluster. FAIL (exit 1) does.
+  # The step summary prints the status word so a green job is not read as PASS.
+  aws-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch base branch
+        run: git fetch origin "${{ github.base_ref || 'bootstrap' }}"
+
+      - name: Decision tables
+        run: |
+          bash scripts/verify/launch.test.sh
+          bash scripts/verify/aws-gate.test.sh
+
+      - name: AWS deployment gate
+        id: gate
+        env:
+          VERIFY_BASE: ${{ github.base_ref && format('origin/{0}', github.base_ref) || 'origin/bootstrap' }}
+        run: |
+          set +e
+          bash scripts/verify/aws-gate.sh
+          code=$?
+          set -e
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          if [ "$code" -eq 1 ]; then
+            exit 1
+          fi
+          if [ "$code" -ne 0 ] && [ "$code" -ne 2 ]; then
+            echo "unexpected aws-gate exit $code"
+            exit "$code"
+          fi
+
+      - name: Record AWS gate status
+        if: always()
+        run: python3 scripts/verify/publish-aws-status.py
+
+      - name: Upload AWS gate evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aws-gate-evidence
+          path: evidence/runs/**
+          if-no-files-found: error
+
+  # Focused Go tests and builds. Red tests fail the job.
+  # This is the minimal alternative documented in scripts/verify/check.sh.
+  minimal-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.1"
+          cache-dependency-path: multica/server/go.sum
+
+      - name: Minimal Go check
+        run: bash scripts/verify/check.sh
+        env:
+          VERIFY_CHECK: minimal
+
+      - name: Upload check evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: minimal-check-evidence
+          path: evidence/runs/**
+          if-no-files-found: error
+
+  # Database-backed Go suite from multica/scripts/test-go.sh.
+  # A package that skips because Postgres is down fails the job.
+  go-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_DB: multica
+          POSTGRES_USER: multica
+          POSTGRES_PASSWORD: multica
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U multica -d multica"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://multica:multica@localhost:5432/multica?sslmode=disable
+      REDIS_TEST_URL: redis://localhost:6379/1
+      VERIFY_CHECK: go
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.1"
+          cache-dependency-path: multica/server/go.sum
+
+      - name: Go test suite
+        run: bash scripts/verify/check.sh
+
+      - name: Upload Go test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: go-test-evidence
+          path: evidence/runs/**
+          if-no-files-found: error

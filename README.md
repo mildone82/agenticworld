@@ -75,8 +75,10 @@ helm upgrade --install multica ./deploy/aws/helm/multica \
   -f ./deploy/aws/helm/values-prod.yaml   # 先替换其中的端点/域名/digest 占位符
 
 # 6. 校验
-./deploy/aws/scripts/validate-deployment.sh
+./scripts/validate-deployment.sh
 kubectl -n multica get pods    # backend/frontend Running，迁移 Job Completed
+# 无集群或无凭证时，验证门禁必须记为 BLOCKED，不能把上面的静态检查当成 PASS：
+# ./scripts/verify/aws-gate.sh
 ```
 
 部署、迁移执行、daemon 通道验证、回滚与上线门禁的完整步骤见 [`docs/AWS_EKS_DEPLOYMENT.md`](docs/AWS_EKS_DEPLOYMENT.md)。
@@ -107,5 +109,13 @@ docker compose -f docker-compose.selfhost.yml \
   -f docker-compose.selfhost.build.yml build   # backend: Go 1.26；frontend: Node 22 / Next.js
 make check   # 上游完整检查（需要 Node 22、pnpm 10.28.2、Go 1.26.1、PostgreSQL 17）
 ```
+
+Agent 验证入口（CLI 构建、doctor、最小 Go 检查、AWS 门禁状态）在仓库根目录：
+
+```bash
+./scripts/verify/run.sh
+```
+
+证据在 `evidence/runs/<run-id>/`。交接说明见 `docs/AGENT_SHARE_PROGRESS.md`。
 
 官方自托管入口还包括 `docker-compose.selfhost.yml` 和 `multica/deploy/helm/multica/`。生产参数与真实代码的逐条核对见 [`docs/GATE0_COMPONENT_PROFILE.md`](docs/GATE0_COMPONENT_PROFILE.md)。
