@@ -1,0 +1,5 @@
+# Upstream snapshots. Review pin changes in PINS and scripts/vendor-terraform-modules.sh.
+vpc/** linguist-vendored
+eks/** linguist-vendored
+rds/** linguist-vendored
+iam/** linguist-vendored

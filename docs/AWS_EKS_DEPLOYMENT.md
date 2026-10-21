@@ -58,7 +58,7 @@ terraform -chdir=deploy/aws/terraform plan -out=plan.tfplan
 terraform -chdir=deploy/aws/terraform apply plan.tfplan
 ```
 
-The modules are version-pinned. The foundation contains:
+Module sources are local copies under `deploy/aws/terraform/vendor/`, pinned to the registry versions this stack was written against: VPC `v5.21.0`, EKS `v20.37.2`, RDS `v6.12.0`, and IAM `v5.59.0` (the load-balancer controller role). Refresh them with `./scripts/vendor-terraform-modules.sh`. `terraform init` still downloads the providers pinned in `.terraform.lock.hcl` and the EKS module's nested `terraform-aws-modules/kms/aws` `v2.1.0`. Applying still needs operator AWS credentials, a reviewed `terraform.tfvars`, and a remote backend configured outside this tree. The foundation contains:
 
 - public ALB subnets, private EKS application subnets, and isolated data subnets across three AZs;
 - an EKS managed node group (Karpenter is intentionally not required without measured node-elasticity demand);
